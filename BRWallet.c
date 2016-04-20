@@ -39,7 +39,7 @@ struct BRWalletStruct {
     BRUTXO *utxos;
     BRTransaction **transactions;
     BRMasterPubKey masterPubKey;
-    BRAddress *internalChain, *externalChain;
+    BRAddress *internalChain, *externalChain, *internalWitnessChain, *externalWitnessChain;
     BRSet *allTx, *invalidTx, *pendingTx, *spentOutputs, *usedAddrs, *allAddrs;
     void *callbackInfo;
     void (*balanceChanged)(void *info, uint64_t balance);
@@ -69,6 +69,13 @@ inline static size_t _txChainIndex(const BRTransaction *tx, const BRAddress *add
     return SIZE_MAX;
 }
 
+// true if tx is a BIP144 segregated witness tx: https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki
+inline static int _txIsWitness(const BRTransaction *tx)
+{
+    // TODO: XXXX implement
+    return 0;
+}
+
 inline static int _BRWalletTxIsAscending(BRWallet *wallet, const BRTransaction *tx1, const BRTransaction *tx2)
 {
     if (! tx1 || ! tx2) return 0;
@@ -96,9 +103,18 @@ inline static int _BRWalletTxCompare(BRWallet *wallet, const BRTransaction *tx1,
 
     if (_BRWalletTxIsAscending(wallet, tx1, tx2)) return 1;
     if (_BRWalletTxIsAscending(wallet, tx2, tx1)) return -1;
-    i = _txChainIndex(tx1, wallet->internalChain);
-    j = _txChainIndex(tx2, (i == SIZE_MAX) ? wallet->externalChain : wallet->internalChain);
-    if (i == SIZE_MAX && j != SIZE_MAX) i = _txChainIndex((BRTransaction *)tx1, wallet->externalChain);
+
+    if (_txIsWitness(tx1) && _txIsWitness(tx2)) {
+        i = _txChainIndex(tx1, wallet->internalWitnessChain);
+        j = _txChainIndex(tx2, (i == SIZE_MAX) ? wallet->externalWitnessChain : wallet->internalWitnessChain);
+        if (i == SIZE_MAX && j != SIZE_MAX) i = _txChainIndex(tx1, wallet->externalWitnessChain);
+    }
+    else {
+        i = _txChainIndex(tx1, wallet->internalChain);
+        j = _txChainIndex(tx2, (i == SIZE_MAX) ? wallet->externalChain : wallet->internalChain);
+        if (i == SIZE_MAX && j != SIZE_MAX) i = _txChainIndex(tx1, wallet->externalChain);
+    }
+
     if (i != SIZE_MAX && j != SIZE_MAX && i != j) return (i > j) ? 1 : -1;
     return 0;
 }
@@ -258,6 +274,8 @@ BRWallet *BRWalletNew(BRTransaction *transactions[], size_t txCount, BRMasterPub
     wallet->masterPubKey = mpk;
     array_new(wallet->internalChain, 100);
     array_new(wallet->externalChain, 100);
+    array_new(wallet->internalWitnessChain, 100);
+    array_new(wallet->externalWitnessChain, 100);
     array_new(wallet->balanceHist, txCount + 100);
     wallet->allTx = BRSetNew(BRTransactionHash, BRTransactionEq, txCount + 100);
     wallet->invalidTx = BRSetNew(BRTransactionHash, BRTransactionEq, 10);
@@ -340,7 +358,11 @@ void BRWalletUnusedAddrs(BRWallet *wallet, BRAddress addrs[], uint32_t gapLimit,
         size_t len = BRBIP32PubKey(pubKey, sizeof(pubKey), wallet->masterPubKey, chain, (uint32_t)count);
         
         BRKeySetPubKey(&key, pubKey, len);
-        if (! BRKeyAddress(&key, address.s, sizeof(address)) || BRAddressEq(&address, &BR_ADDRESS_NONE)) break;
+        
+        if (((chain & SEQUENCE_WITNESS_FLAG) && ! BRKeyWitnessAddress(&key, address.s, sizeof(address))) ||
+            ((chain & SEQUENCE_WITNESS_FLAG) == 0 && ! BRKeyAddress(&key, address.s, sizeof(address))) ||
+            BRAddressEq(&address, &BR_ADDRESS_NONE)) break;
+        
         array_add(addrChain, address);
         count++;
         if (BRSetContains(wallet->usedAddrs, &address)) i = count;
@@ -1172,6 +1194,8 @@ void BRWalletFree(BRWallet *wallet)
     BRSetFree(wallet->spentOutputs);
     array_free(wallet->internalChain);
     array_free(wallet->externalChain);
+    array_free(wallet->internalWitnessChain);
+    array_free(wallet->externalWitnessChain);
     array_free(wallet->balanceHist);
 
     for (size_t i = array_count(wallet->transactions); i > 0; i--) {

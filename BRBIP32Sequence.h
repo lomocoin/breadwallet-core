@@ -37,10 +37,13 @@ extern "C" {
 // BIP32 is a scheme for deriving chains of addresses from a seed value
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 
-#define SEQUENCE_GAP_LIMIT_EXTERNAL 10
-#define SEQUENCE_GAP_LIMIT_INTERNAL 5
-#define SEQUENCE_EXTERNAL_CHAIN     0
-#define SEQUENCE_INTERNAL_CHAIN     1
+#define SEQUENCE_GAP_LIMIT_EXTERNAL     10
+#define SEQUENCE_GAP_LIMIT_INTERNAL     5
+#define SEQUENCE_EXTERNAL_CHAIN         0
+#define SEQUENCE_INTERNAL_CHAIN         1
+#define SEQUENCE_EXTERNAL_WITNESS_CHAIN (SEQUENCE_EXTERNAL_CHAIN | SEQUENCE_WITNESS_FLAG)
+#define SEQUENCE_INTERNAL_WITNESS_CHAIN (SEQUENCE_INTERNAL_CHAIN | SEQUENCE_WITNESS_FLAG)
+#define SEQUENCE_WITNESS_FLAG           0x40000000
 
 typedef struct {
     uint32_t fingerPrint;

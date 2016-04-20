@@ -301,6 +301,29 @@ size_t BRKeyAddress(BRKey *key, char *addr, size_t addrLen)
     return addrLen;
 }
 
+// writes the pay-to-witness-pubkey-hash nested in pay-to-script-hash bitcoin address for key to addr:
+// https://bitcoincore.org/en/segwit_wallet_dev/#p2wpkh-in-p2sh-p2sh-p2wpkh
+// returns the number of bytes written, or addrLen needed if addr is NULL
+size_t BRKeyWitnessAddress(BRKey *key, char *addr, size_t addrLen)
+{
+    UInt160 pubKeyHash = BRKeyHash160(key);
+    uint8_t data[21], redeemScript[1 + BRScriptPushData(NULL, 0, pubKeyHash.u8, sizeof(pubKeyHash))];
+    
+    if (! UInt160IsZero(pubKeyHash)) {
+        redeemScript[0] = OP_0;
+        BRScriptPushData(&redeemScript[1], sizeof(redeemScript) - 1, pubKeyHash.u8, sizeof(pubKeyHash));
+        data[0] = BITCOIN_SCRIPT_ADDRESS;
+#if BITCOIN_TESTNET
+        data[0] = BITCOIN_SCRIPT_ADDRESS_TEST;
+#endif
+        BRHash160(&data[1], redeemScript, sizeof(redeemScript));
+        addrLen = BRBase58CheckEncode(addr, addrLen, data, sizeof(data));
+    }
+    else addrLen = 0;
+
+    return addrLen;
+}
+
 // signs md with key and writes signature to sig
 // returns the number of bytes written, or sigLen needed if sig is NULL
 // returns 0 on failure
