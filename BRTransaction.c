@@ -299,10 +299,12 @@ static size_t _BRTransactionWitnessData(const BRTransaction *tx, uint8_t *data, 
     off += _BRTxInputData(&input, (data ? &data[off] : NULL), (off <= dataLen ? dataLen - off : 0));
 
     if (sigHash != SIGHASH_SINGLE && sigHash != SIGHASH_NONE) {
-        uint8_t buf[_BRTransactionOutputData(tx, NULL, 0, SIZE_MAX)]; // BUG: XXXX stack overflow vulnerability
-        size_t bufLen = _BRTransactionOutputData(tx, buf, sizeof(buf), SIZE_MAX);
-
+        size_t bufLen = _BRTransactionOutputData(tx, NULL, 0, SIZE_MAX);
+        uint8_t _buf[(bufLen <= MAX_STACK) ? bufLen : 0], *buf = (bufLen <= MAX_STACK) ? _buf : malloc(bufLen);
+        
+        bufLen = _BRTransactionOutputData(tx, buf, bufLen, SIZE_MAX);
         if (data && off + sizeof(UInt256) <= dataLen) BRSHA256_2(&data[off], buf, bufLen); // SIGHASH_ALL outputs hash
+        if (buf != _buf) free(buf);
     }
     else if (sigHash == SIGHASH_SINGLE && index < tx->outCount) {
         uint8_t buf[_BRTransactionOutputData(tx, NULL, 0, index)];

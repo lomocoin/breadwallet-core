@@ -72,8 +72,7 @@ inline static size_t _txChainIndex(const BRTransaction *tx, const BRAddress *add
 // true if tx is a BIP144 segregated witness tx: https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki
 inline static int _txIsWitness(const BRTransaction *tx)
 {
-    // TODO: XXXX implement
-    return 0;
+    return ! UInt256Eq(tx->txHash, tx->wtxHash);
 }
 
 inline static int _BRWalletTxIsAscending(BRWallet *wallet, const BRTransaction *tx1, const BRTransaction *tx2)
