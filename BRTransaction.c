@@ -300,7 +300,7 @@ static size_t _BRTransactionWitnessData(const BRTransaction *tx, uint8_t *data, 
 
     if (sigHash != SIGHASH_SINGLE && sigHash != SIGHASH_NONE) {
         size_t bufLen = _BRTransactionOutputData(tx, NULL, 0, SIZE_MAX);
-        uint8_t _buf[(bufLen <= MAX_STACK) ? bufLen : 0], *buf = (bufLen <= MAX_STACK) ? _buf : malloc(bufLen);
+        uint8_t _buf[(bufLen <= 0x1000) ? bufLen : 0], *buf = (bufLen <= 0x1000) ? _buf : malloc(bufLen);
         
         bufLen = _BRTransactionOutputData(tx, buf, bufLen, SIZE_MAX);
         if (data && off + sizeof(UInt256) <= dataLen) BRSHA256_2(&data[off], buf, bufLen); // SIGHASH_ALL outputs hash
@@ -344,7 +344,7 @@ BRTransaction *BRTransactionParse(const uint8_t *buf, size_t bufLen)
     if (! buf) return NULL;
     
     int isSigned = 1, witnessFlag = 0;
-    size_t i, j, off = 0, sLen = 0, len = 0, count;
+    size_t i, j, off = 0, witnessOff = 0, sLen = 0, len = 0, count;
     BRTransaction *tx = BRTransactionNew();
     BRTxInput *input;
     BRTxOutput *output;
@@ -397,7 +397,7 @@ BRTransaction *BRTransactionParse(const uint8_t *buf, size_t bufLen)
         off += sLen;
     }
     
-    for (i = 0; witnessFlag && off <= bufLen && i < tx->inCount; i++) {
+    for (i = 0, witnessOff = off; witnessFlag && off <= bufLen && i < tx->inCount; i++) {
         input = &tx->inputs[i];
         count = BRVarInt(&buf[off], (off <= bufLen ? bufLen - off : 0), &len);
         off += len;
@@ -418,8 +418,19 @@ BRTransaction *BRTransactionParse(const uint8_t *buf, size_t bufLen)
         BRTransactionFree(tx);
         tx = NULL;
     }
+    else if (isSigned && witnessFlag) {
+        size_t sBufLen = witnessOff - 2 + sizeof(uint32_t);
+        uint8_t _sBuf[(sBufLen <= 0x1000) ? sBufLen : 0], *sBuf = (sBufLen <= 0x1000) ? _sBuf : malloc(sBufLen);
+        
+        BRSHA256_2(&tx->wtxHash, buf, off);
+        UInt32SetLE(sBuf, tx->version);
+        memcpy(&sBuf[sizeof(uint32_t)], &buf[sizeof(uint32_t) + 2], witnessOff - (sizeof(uint32_t) + 2));
+        UInt32SetLE(&sBuf[witnessOff - 2], tx->lockTime);
+        BRSHA256_2(&tx->txHash, sBuf, sBufLen);
+        if (sBuf != _sBuf) free(sBuf);
+    }
     else if (isSigned) {
-        BRSHA256_2(&tx->txHash, buf, off);
+        BRSHA256_2(&tx->wtxHash, buf, off);
         tx->wtxHash = tx->txHash;
     }
     
