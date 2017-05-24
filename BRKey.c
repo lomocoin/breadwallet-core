@@ -277,7 +277,7 @@ UInt160 BRKeyHash160(BRKey *key)
     return hash;
 }
 
-// writes the pay-to-pubkey-hash bitcoin address for key to addr
+// writes the pay-to-pubkey-hash (P2PKH) bitcoin address for key to addr
 // returns the number of bytes written, or addrLen needed if addr is NULL
 size_t BRKeyAddress(BRKey *key, char *addr, size_t addrLen)
 {
@@ -301,7 +301,7 @@ size_t BRKeyAddress(BRKey *key, char *addr, size_t addrLen)
     return addrLen;
 }
 
-// writes the pay-to-witness-pubkey-hash nested in pay-to-script-hash bitcoin address for key to addr:
+// writes the pay-to-witness-pubkey-hash nested in pay-to-script-hash (P2SH-P2WPKH) bitcoin address for key to addr:
 // https://bitcoincore.org/en/segwit_wallet_dev/#p2wpkh-in-p2sh-p2sh-p2wpkh
 // returns the number of bytes written, or addrLen needed if addr is NULL
 size_t BRKeyWitnessAddress(BRKey *key, char *addr, size_t addrLen)

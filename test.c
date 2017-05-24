@@ -1808,7 +1808,7 @@ int BRWalletTests()
     int64_t amt;
     
     tx = BRTransactionNew();
-    BRTransactionAddInput(tx, inHash, 0, inScript, inScriptLen, NULL, 0, TXIN_SEQUENCE);
+    BRTransactionAddInput(tx, inHash, 0, SATOSHIS, inScript, inScriptLen, NULL, 0, NULL, 0, TXIN_SEQUENCE);
     BRTransactionAddOutput(tx, 740000, outScript, outScriptLen);
     BRTransactionSign(tx, &k, 1);
     w = BRWalletNew(&tx, 1, mpk);

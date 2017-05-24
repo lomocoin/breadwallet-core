@@ -124,8 +124,8 @@ void BRTransactionShuffleOutputs(BRTransaction *tx);
 // size in bytes if signed, or estimated size assuming compact pubkey sigs
 size_t BRTransactionSize(const BRTransaction *tx);
 
-// transaction cost as defined by BIP141: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki
-size_t BRTransactionCost(const BRTransaction *tx);
+// virtual transaction size as defined by BIP141: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki
+size_t BRTransactionVSize(const BRTransaction *tx);
 
 // minimum transaction fee needed for tx to relay across the bitcoin network
 uint64_t BRTransactionStandardFee(const BRTransaction *tx);
