@@ -44,16 +44,16 @@
 #include <arpa/inet.h>
 
 #if BITCOIN_TESTNET
-#define MAGIC_NUMBER 0x0709110b
+#define MAGIC_NUMBER 0xefc0f2cb
 #else
-#define MAGIC_NUMBER 0xd9b4bef9
+#define MAGIC_NUMBER 0xd5c9b8a6
 #endif
 #define HEADER_LENGTH      24
 #define MAX_MSG_LENGTH     0x02000000
 #define MAX_GETDATA_HASHES 50000
 #define ENABLED_SERVICES   0ULL  // we don't provide full blocks to remote nodes
-#define PROTOCOL_VERSION   70013
-#define MIN_PROTO_VERSION  70002 // peers earlier than this protocol version not supported (need v0.9 txFee relay rules)
+#define PROTOCOL_VERSION   60006
+#define MIN_PROTO_VERSION  60006 // peers earlier than this protocol version not supported (need v0.9 txFee relay rules)
 #define LOCAL_HOST         ((UInt128) { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x01 })
 #define CONNECT_TIMEOUT    3.0
 #define MESSAGE_TIMEOUT    10.0
@@ -381,7 +381,7 @@ static int _BRPeerAcceptInvMessage(BRPeer *peer, const uint8_t *msg, size_t msgL
     
             // to improve chain download performance, if we received 500 block hashes, request the next 500 block hashes
             if (blockCount >= 500) {
-                UInt256 locators[] = { blockHashes[blockCount - 1], blockHashes[0] };
+                UInt256 locators[] = { blockHashes[blockCount - 2], blockHashes[0] };
             
                 BRPeerSendGetblocks(peer, locators, 2, UINT256_ZERO);
             }

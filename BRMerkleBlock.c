@@ -270,7 +270,7 @@ int BRMerkleBlockIsValid(const BRMerkleBlock *block, uint32_t currentTime)
     
     // check if timestamp is too far in future
     if (block->timestamp > currentTime + BLOCK_MAX_TIME_DRIFT) r = 0;
-    
+/*    
     // check if proof-of-work target is out of range
     if (target == 0 || target & 0x00800000 || size > maxsize || (size == maxsize && target > maxtarget)) r = 0;
     
@@ -281,7 +281,7 @@ int BRMerkleBlockIsValid(const BRMerkleBlock *block, uint32_t currentTime)
         if (block->blockHash.u8[i] < t.u8[i]) break;
         if (block->blockHash.u8[i] > t.u8[i]) r = 0;
     }
-    
+*/    
     return r;
 }
 

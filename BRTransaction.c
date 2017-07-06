@@ -187,6 +187,8 @@ static size_t _BRTransactionData(const BRTransaction *tx, uint8_t *data, size_t 
     if (anyoneCanPay && index >= tx->inCount) return 0;
     if (data && off + sizeof(uint32_t) <= dataLen) UInt32SetLE(&data[off], tx->version); // tx version
     off += sizeof(uint32_t);
+    if (data && off + sizeof(uint32_t) <= dataLen) UInt32SetLE(&data[off], tx->timestamp); // tx timestamp
+    off += sizeof(uint32_t);
     
     if (! anyoneCanPay) {
         off += BRVarIntSet((data ? &data[off] : NULL), (off <= dataLen ? dataLen - off : 0), tx->inCount);
@@ -249,6 +251,7 @@ BRTransaction *BRTransactionNew(void)
 
     assert(tx != NULL);
     tx->version = TX_VERSION;
+    tx->timestamp = time(NULL);
     array_new(tx->inputs, 1);
     array_new(tx->outputs, 2);
     tx->lockTime = TX_LOCKTIME;
@@ -270,6 +273,8 @@ BRTransaction *BRTransactionParse(const uint8_t *buf, size_t bufLen)
     BRTxOutput *output;
     
     tx->version = (off + sizeof(uint32_t) <= bufLen) ? UInt32GetLE(&buf[off]) : 0;
+    off += sizeof(uint32_t);
+    tx->timestamp = (off + sizeof(uint32_t) <= bufLen) ? UInt32GetLE(&buf[off]) : 0;
     off += sizeof(uint32_t);
     tx->inCount = (size_t)BRVarInt(&buf[off], (off <= bufLen ? bufLen - off : 0), &len);
     off += len;
