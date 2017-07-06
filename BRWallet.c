@@ -51,10 +51,7 @@ struct BRWalletStruct {
 
 inline static uint64_t _txFee(uint64_t feePerKb, size_t size)
 {
-    uint64_t standardFee = ((size + 999)/1000)*TX_FEE_PER_KB, // standard fee based on tx size rounded up to nearest kb
-             fee = (((size*feePerKb/1000) + 99)/100)*100; // fee using feePerKb, rounded up to nearest 100 satoshi
-    
-    return (fee > standardFee) ? fee : standardFee;
+    return MIN_TX_FEE;
 }
 
 // chain position of first tx output address that appears in chain
@@ -254,8 +251,8 @@ BRWallet *BRWalletNew(BRTransaction *transactions[], size_t txCount, BRMasterPub
     assert(wallet != NULL);
     array_new(wallet->utxos, 100);
     array_new(wallet->transactions, txCount + 100);
-    wallet->feePerKb = DEFAULT_FEE_PER_KB;
     wallet->masterPubKey = mpk;
+    wallet->feePerKb = 0;
     array_new(wallet->internalChain, 100);
     array_new(wallet->externalChain, 100);
     array_new(wallet->balanceHist, txCount + 100);
@@ -1119,13 +1116,7 @@ uint64_t BRWalletFeeForTxAmount(BRWallet *wallet, uint64_t amount)
 // outputs below this amount are uneconomical due to fees (TX_MIN_OUTPUT_AMOUNT is the absolute minimum output amount)
 uint64_t BRWalletMinOutputAmount(BRWallet *wallet)
 {
-    uint64_t amount;
-    
-    assert(wallet != NULL);
-    pthread_mutex_lock(&wallet->lock);
-    amount = (TX_MIN_OUTPUT_AMOUNT*wallet->feePerKb + MIN_FEE_PER_KB - 1)/MIN_FEE_PER_KB;
-    pthread_mutex_unlock(&wallet->lock);
-    return (amount > TX_MIN_OUTPUT_AMOUNT) ? amount : TX_MIN_OUTPUT_AMOUNT;
+    return TX_MIN_OUTPUT_AMOUNT;
 }
 
 // maximum amount that can be sent from the wallet to a single address after fees
@@ -1185,11 +1176,11 @@ void BRWalletFree(BRWallet *wallet)
     free(wallet);
 }
 
-// returns the given amount (in satoshis) in local currency units (i.e. pennies, pence)
-// price is local currency units per bitcoin
+// returns the given amount (in cent) in local currency units (i.e. pennies, pence)
+// price is local currency units per lomocoin
 int64_t BRLocalAmount(int64_t amount, double price)
 {
-    int64_t localAmount = llabs(amount)*price/SATOSHIS;
+    int64_t localAmount = llabs(amount)*price/CENT;
     
     // if amount is not 0, but is too small to be represented in local currency, return minimum non-zero localAmount
     if (localAmount == 0 && amount != 0) localAmount = 1;
@@ -1197,16 +1188,16 @@ int64_t BRLocalAmount(int64_t amount, double price)
 }
 
 // returns the given local currency amount in satoshis
-// price is local currency units (i.e. pennies, pence) per bitcoin
+// price is local currency units (i.e. pennies, pence) per lomocoin
 int64_t BRBitcoinAmount(int64_t localAmount, double price)
 {
     int overflowbits = 0;
     int64_t p = 10, min, max, amount = 0, lamt = llabs(localAmount);
 
     if (lamt != 0 && price > 0) {
-        while (lamt + 1 > INT64_MAX/SATOSHIS) lamt /= 2, overflowbits++; // make sure we won't overflow an int64_t
-        min = lamt*SATOSHIS/price; // minimum amount that safely matches localAmount
-        max = (lamt + 1)*SATOSHIS/price - 1; // maximum amount that safely matches localAmount
+        while (lamt + 1 > INT64_MAX/CENT) lamt /= 2, overflowbits++; // make sure we won't overflow an int64_t
+        min = lamt*CENT/price; // minimum amount that safely matches localAmount
+        max = (lamt + 1)*CENT/price - 1; // maximum amount that safely matches localAmount
         amount = (min + max)/2; // average min and max
         while (overflowbits > 0) lamt *= 2, min *= 2, max *= 2, amount *= 2, overflowbits--;
         

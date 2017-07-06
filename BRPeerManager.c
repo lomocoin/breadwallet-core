@@ -1124,9 +1124,9 @@ static void _peerRejectedTx(void *info, UInt256 txHash, uint8_t code)
 
 static int _BRPeerManagerVerifyBlock(BRPeerManager *manager, BRMerkleBlock *block, BRMerkleBlock *prev, BRPeer *peer)
 {
-    uint32_t transitionTime = 0;
+ //   uint32_t transitionTime = 0;
     int r = 1;
-    
+#if 0    
     // check if we hit a difficulty transition, and find previous transition time
     if ((block->height % BLOCK_DIFFICULTY_INTERVAL) == 0) {
         BRMerkleBlock *b = block;
@@ -1163,7 +1163,7 @@ static int _BRPeerManagerVerifyBlock(BRPeerManager *manager, BRMerkleBlock *bloc
                  u256_hex_encode(block->blockHash));
         r = 0;
     }
-    
+#endif    
     if (r) {
         BRMerkleBlock *checkpoint = BRSetGet(manager->checkpoints, block);
 
@@ -1421,25 +1421,6 @@ static void _peerDataNotfound(void *info, const UInt256 txHashes[], size_t txCou
 
 static void _peerSetFeePerKb(void *info, uint64_t feePerKb)
 {
-    BRPeer *p, *peer = ((BRPeerCallbackInfo *)info)->peer;
-    BRPeerManager *manager = ((BRPeerCallbackInfo *)info)->manager;
-    uint64_t maxFeePerKb = 0, secondFeePerKb = 0;
-    
-    pthread_mutex_lock(&manager->lock);
-    
-    for (size_t i = array_count(manager->connectedPeers); i > 0; i--) { // find second highest fee rate
-        p = manager->connectedPeers[i - 1];
-        if (BRPeerConnectStatus(p) != BRPeerStatusConnected) continue;
-        if (BRPeerFeePerKb(p) > maxFeePerKb) secondFeePerKb = maxFeePerKb, maxFeePerKb = BRPeerFeePerKb(p);
-    }
-    
-    if (secondFeePerKb*3/2 > DEFAULT_FEE_PER_KB && secondFeePerKb*3/2 <= MAX_FEE_PER_KB &&
-        secondFeePerKb*3/2 > BRWalletFeePerKb(manager->wallet)) {
-        peer_log(peer, "increasing feePerKb to %llu based on feefilter messages from peers", secondFeePerKb*3/2);
-        BRWalletSetFeePerKb(manager->wallet, secondFeePerKb*3/2);
-    }
-
-    pthread_mutex_unlock(&manager->lock);
 }
 
 //static void _peerRequestedTxPingDone(void *info, int success)
