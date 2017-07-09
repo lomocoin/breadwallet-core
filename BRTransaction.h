@@ -89,6 +89,7 @@ void BRTxOutputSetScript(BRTxOutput *output, const uint8_t *script, size_t scrip
 typedef struct {
     UInt256 txHash;
     uint32_t version;
+    uint32_t txTime;
     BRTxInput *inputs;
     size_t inCount;
     BRTxOutput *outputs;
