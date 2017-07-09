@@ -352,6 +352,8 @@ static int _BRPeerAcceptInvMessage(BRPeer *peer, const uint8_t *msg, size_t msgL
             if (! ctx->sentFilter && ! ctx->sentGetblocks) blockCount = 0;
             if (blockCount == 1 && UInt256Eq(ctx->lastBlockHash, UInt256Get(blocks[0]))) blockCount = 0;
             if (blockCount == 1) ctx->lastBlockHash = UInt256Get(blocks[0]);
+            
+            if (blockCount == 500) blockCount--;
 
             UInt256 hash, blockHashes[blockCount], txHashes[txCount];
 
@@ -380,8 +382,8 @@ static int _BRPeerAcceptInvMessage(BRPeer *peer, const uint8_t *msg, size_t msgL
             if (j > 0 || blockCount > 0) BRPeerSendGetdata(peer, txHashes, j, blockHashes, blockCount);
     
             // to improve chain download performance, if we received 500 block hashes, request the next 500 block hashes
-            if (blockCount >= 500) {
-                UInt256 locators[] = { blockHashes[blockCount - 2], blockHashes[0] };
+            if (blockCount >= 500 - 1) {
+                UInt256 locators[] = { blockHashes[blockCount - 1], blockHashes[0] };
             
                 BRPeerSendGetblocks(peer, locators, 2, UINT256_ZERO);
             }
