@@ -1176,11 +1176,11 @@ void BRWalletFree(BRWallet *wallet)
     free(wallet);
 }
 
-// returns the given amount (in cent) in local currency units (i.e. pennies, pence)
+// returns the given amount (in coin) in local currency units (i.e. pennies, pence)
 // price is local currency units per lomocoin
 int64_t BRLocalAmount(int64_t amount, double price)
 {
-    int64_t localAmount = llabs(amount)*price/CENT;
+    int64_t localAmount = llabs(amount)*price/COIN;
     
     // if amount is not 0, but is too small to be represented in local currency, return minimum non-zero localAmount
     if (localAmount == 0 && amount != 0) localAmount = 1;
@@ -1195,9 +1195,9 @@ int64_t BRBitcoinAmount(int64_t localAmount, double price)
     int64_t p = 10, min, max, amount = 0, lamt = llabs(localAmount);
 
     if (lamt != 0 && price > 0) {
-        while (lamt + 1 > INT64_MAX/CENT) lamt /= 2, overflowbits++; // make sure we won't overflow an int64_t
-        min = lamt*CENT/price; // minimum amount that safely matches localAmount
-        max = (lamt + 1)*CENT/price - 1; // maximum amount that safely matches localAmount
+        while (lamt + 1 > INT64_MAX/COIN) lamt /= 2, overflowbits++; // make sure we won't overflow an int64_t
+        min = lamt*COIN/price; // minimum amount that safely matches localAmount
+        max = (lamt + 1)*COIN/price - 1; // maximum amount that safely matches localAmount
         amount = (min + max)/2; // average min and max
         while (overflowbits > 0) lamt *= 2, min *= 2, max *= 2, amount *= 2, overflowbits--;
         
