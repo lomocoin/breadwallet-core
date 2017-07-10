@@ -463,7 +463,7 @@ static int _BRPeerAcceptHeadersMessage(BRPeer *peer, const uint8_t *msg, size_t 
         uint32_t timestamp = (count > 0) ? UInt32GetLE(&msg[off + 81*(count - 1) + 68]) : 0;
     
         if (count >= 2000 || (timestamp > 0 && timestamp + 7*24*60*60 + BLOCK_MAX_TIME_DRIFT >= ctx->earliestKeyTime)) {
-            size_t last = 0;
+            size_t last = count;
             time_t now = time(NULL);
             UInt256 locators[2];
             
@@ -471,6 +471,7 @@ static int _BRPeerAcceptHeadersMessage(BRPeer *peer, const uint8_t *msg, size_t 
             BRSHA256_2(&locators[1], &msg[off], 80);
 
             if (timestamp > 0 && timestamp + 7*24*60*60 + BLOCK_MAX_TIME_DRIFT >= ctx->earliestKeyTime) {
+                last = 0;
                 // request blocks for the remainder of the chain
                 timestamp = (++last < count) ? UInt32GetLE(&msg[off + 81*last + 68]) : 0;
 
@@ -483,7 +484,7 @@ static int _BRPeerAcceptHeadersMessage(BRPeer *peer, const uint8_t *msg, size_t 
             }
             else BRPeerSendGetheaders(peer, locators, 2, UINT256_ZERO);
 
-            for (size_t i = 0; r && i < count; i++) {
+            for (size_t i = 0; r && i < last; i++) {
                 BRMerkleBlock *block = BRMerkleBlockParse(&msg[off + 81*i], 81);
                 
                 if (! BRMerkleBlockIsValid(block, (uint32_t)now)) {
