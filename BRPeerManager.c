@@ -776,7 +776,7 @@ static void _peerConnected(void *info)
         BRPeerLastBlock(peer) + 10 < manager->lastBlock->height) {
         BRPeerDisconnect(peer);
     }
-    else if (BRPeerVersion(peer) >= 70011 && ! (peer->services & SERVICES_NODE_BLOOM)) {
+    else if (! (peer->services & SERVICES_NODE_BLOOM)) {
         BRPeerDisconnect(peer); // drop peers that don't support SPV filtering
     }
     else if (manager->downloadPeer && // check if we should stick with the existing download peer
